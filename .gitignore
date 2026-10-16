@@ -1,0 +1,7 @@
+node_modules/
+uploads/
+data/metadata.json
+certs/
+*.pem
+.DS_Store
+Thumbs.db

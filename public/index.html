@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="theme-color" content="#0f1419" />
+  <title>사진 보관함</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar" id="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <h1>사진 보관함</h1>
+      </div>
+      <p class="subtitle" id="pathLabel">/</p>
+    </header>
+
+    <nav class="tabs" role="tablist">
+      <button class="tab active" data-view="browse" type="button">폴더</button>
+      <button class="tab" data-view="camera" type="button">촬영</button>
+      <button class="tab" data-view="gallery" type="button">갤러리</button>
+    </nav>
+
+    <main>
+      <!-- Browse -->
+      <section id="view-browse" class="view active">
+        <div class="toolbar">
+          <button type="button" id="btnUp" class="btn ghost" disabled>상위</button>
+          <button type="button" id="btnNewFolder" class="btn primary">새 폴더</button>
+        </div>
+        <div id="folderList" class="folder-list"></div>
+        <div id="browsePhotos" class="photo-grid"></div>
+        <p id="browseEmpty" class="empty hidden">폴더가 비어 있습니다. 새 폴더를 만들거나 촬영 탭에서 사진을 저장하세요.</p>
+      </section>
+
+      <!-- Camera: native-style -->
+      <section id="view-camera" class="view camera-screen">
+        <div class="camera-stage" id="cameraStage">
+          <video id="video" playsinline autoplay muted></video>
+          <canvas id="canvas" class="hidden"></canvas>
+
+          <!-- Live HUD -->
+          <div class="cam-hud" id="camHud">
+            <div class="cam-hud-top">
+              <button type="button" id="btnFlash" class="hud-chip" title="플래시">
+                플래시 <strong id="flashLabel">끔</strong>
+              </button>
+              <button type="button" id="btnFolderChip" class="hud-chip folder-chip" title="저장 폴더">
+                <span id="folderChipLabel">/</span>
+              </button>
+              <button type="button" id="btnCamSettings" class="hud-chip" title="설정">설정</button>
+            </div>
+            <div class="cam-hud-bottom">
+              <button type="button" id="btnLastThumb" class="thumb-btn" aria-label="방금 저장한 사진" disabled>
+                <img id="lastThumbImg" alt="" />
+              </button>
+              <button type="button" id="btnShutter" class="shutter" aria-label="사진 촬영"></button>
+              <button type="button" id="btnFlip" class="hud-round" title="전후면 전환">전환</button>
+            </div>
+            <p class="cam-geo" id="geoStatus">위치 확인 중…</p>
+          </div>
+
+          <!-- Review: after shutter -->
+          <div id="reviewOverlay" class="review-overlay hidden">
+            <img id="reviewImg" class="review-full" alt="찍은 사진 미리보기" />
+            <div class="review-bottom">
+              <button type="button" id="btnRetake" class="review-btn ghost">다시 찍기</button>
+              <button type="button" id="btnConfirmSave" class="review-btn save">저장</button>
+            </div>
+          </div>
+
+          <div id="shutterFlash" class="shutter-flash" hidden></div>
+        </div>
+
+        <!-- Settings sheet -->
+        <div id="camSettingsSheet" class="sheet hidden">
+          <div class="sheet-card">
+            <h2>촬영 설정</h2>
+            <label class="field">
+              <span>저장 폴더</span>
+              <select id="saveFolder"></select>
+            </label>
+            <label class="field">
+              <span>해상도</span>
+              <select id="resolutionSelect">
+                <option value="max">최고 화질</option>
+              </select>
+            </label>
+            <p class="sheet-note" id="camStatus">카메라 준비 중…</p>
+            <div class="sheet-actions">
+              <button type="button" id="btnStartCam" class="btn ghost">카메라 다시 연결</button>
+              <button type="button" id="btnCloseSettings" class="btn primary">닫기</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Gallery -->
+      <section id="view-gallery" class="view">
+        <div class="toolbar">
+          <label class="field grow">
+            <span>폴더 필터</span>
+            <select id="galleryFolder"></select>
+          </label>
+          <button type="button" id="btnRefresh" class="btn ghost">새로고침</button>
+        </div>
+        <div id="galleryGrid" class="photo-grid"></div>
+        <p id="galleryEmpty" class="empty hidden">저장된 사진이 없습니다.</p>
+      </section>
+    </main>
+  </div>
+
+  <!-- Photo detail modal -->
+  <dialog id="photoModal" class="modal">
+    <div class="modal-body">
+      <div id="zoomStage" class="zoom-stage" title="핀치/더블탭으로 확대">
+        <img id="modalImg" alt="사진" draggable="false" />
+      </div>
+      <p class="zoom-hint">핀치 · 더블탭 · 드래그로 확대/이동</p>
+      <div class="modal-info">
+        <h2 id="modalName"></h2>
+        <p id="modalTime"></p>
+        <p id="modalSize"></p>
+        <p id="modalLoc"></p>
+        <div id="mapFrame" class="map-frame hidden"></div>
+        <div class="modal-actions">
+          <a id="modalDownload" class="btn primary" download>다운로드</a>
+          <a id="modalMaps" class="btn ghost" target="_blank" rel="noopener">지도에서 보기</a>
+          <button type="button" id="modalDelete" class="btn danger">삭제</button>
+          <button type="button" id="modalClose" class="btn ghost">닫기</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- New folder dialog -->
+  <dialog id="folderModal" class="modal small">
+    <form method="dialog" id="folderForm" class="modal-body pad">
+      <h2>새 폴더</h2>
+      <label class="field">
+        <span>폴더 이름</span>
+        <input type="text" id="folderName" placeholder="예: 현장A_2026-03" maxlength="64" required />
+      </label>
+      <div class="modal-actions">
+        <button type="submit" class="btn primary" value="ok">만들기</button>
+        <button type="button" class="btn ghost" id="folderCancel">취소</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/js/app.js"></script>
+</body>
+</html>
