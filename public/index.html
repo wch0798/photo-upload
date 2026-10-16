@@ -9,16 +9,38 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   <link rel="stylesheet" href="/css/style.css" />
 </head>
 <body>
-  <div class="app">
+  <div id="authGate" class="auth-gate hidden">
+    <form id="authForm" class="auth-card">
+      <h2 id="authTitle">로그인</h2>
+      <p id="authDesc" class="sheet-note">한 번 로그인하면 이 장치에서는 다시 묻지 않습니다.</p>
+      <label class="field">
+        <span>장치 이름</span>
+        <input type="text" id="authDeviceName" maxlength="80" placeholder="예: 사무실 갤럭시" />
+      </label>
+      <label class="field">
+        <span>비밀번호</span>
+        <input type="password" id="authPassword" autocomplete="current-password" required minlength="4" />
+      </label>
+      <button type="submit" class="btn primary full" id="authSubmit">이 장치로 로그인</button>
+      <p id="authError" class="auth-error hidden"></p>
+    </form>
+  </div>
+
+  <div class="app" id="appRoot">
     <header class="topbar" id="topbar">
       <div class="brand">
         <span class="brand-mark" aria-hidden="true"></span>
         <h1>사진 보관함</h1>
       </div>
-      <p class="subtitle" id="pathLabel">/</p>
+      <div class="top-actions">
+        <button type="button" id="btnDevices" class="btn sm ghost hidden" title="등록된 장치">장치</button>
+        <button type="button" id="btnBackup" class="btn sm ghost" title="전체 백업">백업</button>
+        <button type="button" id="btnLogout" class="btn sm ghost hidden">로그아웃</button>
+      </div>
     </header>
 
     <nav class="tabs" role="tablist">
@@ -28,15 +50,40 @@
     </nav>
 
     <main>
-      <!-- Browse -->
+      <!-- Browse — explorer style -->
       <section id="view-browse" class="view active">
-        <div class="toolbar">
-          <button type="button" id="btnUp" class="btn ghost" disabled>상위</button>
-          <button type="button" id="btnNewFolder" class="btn primary">새 폴더</button>
+        <div class="explorer">
+          <div class="explorer-nav">
+            <button type="button" id="btnBack" class="nav-btn" disabled title="뒤로">←</button>
+            <div class="address-bar" title="현재 폴더 경로">
+              <nav id="breadcrumb" class="breadcrumb" aria-label="경로"></nav>
+            </div>
+          </div>
+          <div class="explorer-toolbar">
+            <div class="tool-left">
+              <input type="search" id="searchInput" class="search-input" placeholder="검색 (이름·날짜)" />
+              <button type="button" id="btnNewFolder" class="btn sm primary">새 폴더</button>
+              <button type="button" id="btnRenameFolder" class="btn sm ghost" disabled>이름변경</button>
+              <button type="button" id="btnDeleteFolder" class="btn sm danger" disabled>폴더삭제</button>
+              <button type="button" id="btnShareFolder" class="btn sm ghost">공유</button>
+              <button type="button" id="btnSelectAll" class="btn sm ghost">전체선택</button>
+            </div>
+            <div class="tool-right" id="selActions">
+              <span id="selCount" class="sel-count"></span>
+              <button type="button" id="btnClearSel" class="btn sm ghost hidden">해제</button>
+              <button type="button" id="btnMoveSelected" class="btn sm ghost hidden" disabled>이동</button>
+              <button type="button" id="btnDownloadSelected" class="btn sm primary hidden" disabled>받기</button>
+              <button type="button" id="btnDeleteSelected" class="btn sm danger hidden" disabled>삭제</button>
+            </div>
+          </div>
+          <div class="explorer-body">
+            <p id="browseCount" class="list-count"></p>
+            <div id="folderList" class="folder-list explorer-folders"></div>
+            <div id="browsePhotos" class="photo-grid"></div>
+            <div id="browseSentinel" class="scroll-sentinel hidden" aria-hidden="true"></div>
+            <p id="browseEmpty" class="empty hidden">폴더가 비어 있습니다. 새 폴더를 만들거나 촬영 탭에서 사진을 저장하세요.</p>
+          </div>
         </div>
-        <div id="folderList" class="folder-list"></div>
-        <div id="browsePhotos" class="photo-grid"></div>
-        <p id="browseEmpty" class="empty hidden">폴더가 비어 있습니다. 새 폴더를 만들거나 촬영 탭에서 사진을 저장하세요.</p>
       </section>
 
       <!-- Camera: native-style -->
@@ -92,6 +139,13 @@
                 <option value="max">최고 화질</option>
               </select>
             </label>
+            <label class="auto-row settings-toggle">
+              <input type="checkbox" id="autoSave" />
+              <span>
+                <strong>바로 저장</strong>
+                <small>끄면 미리보기 후 저장 / 다시 찍기</small>
+              </span>
+            </label>
             <p class="sheet-note" id="camStatus">카메라 준비 중…</p>
             <div class="sheet-actions">
               <button type="button" id="btnStartCam" class="btn ghost">카메라 다시 연결</button>
@@ -110,7 +164,17 @@
           </label>
           <button type="button" id="btnRefresh" class="btn ghost">새로고침</button>
         </div>
+        <div class="gallery-modes" role="tablist">
+          <button type="button" class="mode-btn active" data-gallery-mode="grid">사진</button>
+          <button type="button" class="mode-btn" data-gallery-mode="map">지도</button>
+        </div>
+        <p id="galleryLocSummary" class="gallery-summary"></p>
         <div id="galleryGrid" class="photo-grid"></div>
+        <div id="gallerySentinel" class="scroll-sentinel hidden" aria-hidden="true"></div>
+        <div id="galleryMapWrap" class="gallery-map-wrap hidden">
+          <div id="galleryMap" class="gallery-map"></div>
+          <p id="galleryMapEmpty" class="empty map-empty hidden">위치에 찍힌 사진이 없습니다. 촬영 시 위치 권한을 허용해 주세요.</p>
+        </div>
         <p id="galleryEmpty" class="empty hidden">저장된 사진이 없습니다.</p>
       </section>
     </main>
@@ -127,34 +191,98 @@
         <h2 id="modalName"></h2>
         <p id="modalTime"></p>
         <p id="modalSize"></p>
-        <p id="modalLoc"></p>
+        <p id="modalLoc" class="hidden"></p>
         <div id="mapFrame" class="map-frame hidden"></div>
         <div class="modal-actions">
           <a id="modalDownload" class="btn primary" download>다운로드</a>
-          <a id="modalMaps" class="btn ghost" target="_blank" rel="noopener">지도에서 보기</a>
+          <button type="button" id="modalLocBtn" class="btn ghost">위치</button>
+          <a id="modalMaps" class="btn ghost hidden" target="_blank" rel="noopener">지도에서 보기</a>
           <button type="button" id="modalDelete" class="btn danger">삭제</button>
+          <button type="button" id="modalMove" class="btn ghost">이동</button>
           <button type="button" id="modalClose" class="btn ghost">닫기</button>
         </div>
       </div>
     </div>
   </dialog>
 
-  <!-- New folder dialog -->
+  <!-- Devices dialog -->
+  <dialog id="devicesModal" class="modal small">
+    <div class="modal-body pad">
+      <h2>등록된 장치</h2>
+      <p class="sheet-note">로그인된 기기 목록입니다. 해제하면 그 기기는 다시 로그인해야 합니다.</p>
+      <div id="devicesList" class="devices-list"></div>
+      <div class="modal-actions">
+        <button type="button" id="btnDevicesClose" class="btn ghost">닫기</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Move photo dialog -->
+  <dialog id="moveModal" class="modal small">
+    <div class="modal-body pad">
+      <h2>사진 이동</h2>
+      <p id="movePhotoName" class="sheet-note"></p>
+      <label class="field">
+        <span>이동할 폴더</span>
+        <select id="moveFolderSelect"></select>
+      </label>
+      <div class="modal-actions">
+        <button type="button" id="btnDoMove" class="btn primary">이동</button>
+        <button type="button" id="btnMoveCancel" class="btn ghost">취소</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Share link dialog -->
+  <dialog id="shareModal" class="modal small">
+    <div class="modal-body pad">
+      <h2>폴더 공유</h2>
+      <p class="sheet-note">링크가 있는 사람만 이 폴더(하위 포함)를 읽기 전용으로 볼 수 있습니다.</p>
+      <p id="shareFolderLabel" class="sheet-note"></p>
+      <label class="field">
+        <span>공유 비밀번호 (선택)</span>
+        <input type="password" id="sharePasswordInput" placeholder="비워두면 비밀번호 없음" />
+      </label>
+      <label class="field">
+        <span>만료 (일)</span>
+        <select id="shareExpirySelect">
+          <option value="">만료 없음</option>
+          <option value="1">1일</option>
+          <option value="7" selected>7일</option>
+          <option value="30">30일</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>공유 링크</span>
+        <input type="text" id="shareUrlInput" readonly />
+      </label>
+      <p id="shareMeta" class="sheet-note"></p>
+      <div class="modal-actions">
+        <button type="button" id="btnCreateShare" class="btn primary">링크 만들기</button>
+        <button type="button" id="btnCopyShare" class="btn ghost">복사</button>
+        <button type="button" id="btnRevokeShare" class="btn danger">공유 중지</button>
+        <button type="button" id="btnShareClose" class="btn ghost">닫기</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- New / rename folder dialog -->
   <dialog id="folderModal" class="modal small">
     <form method="dialog" id="folderForm" class="modal-body pad">
-      <h2>새 폴더</h2>
+      <h2 id="folderModalTitle">새 폴더</h2>
       <label class="field">
         <span>폴더 이름</span>
         <input type="text" id="folderName" placeholder="예: 현장A_2026-03" maxlength="64" required />
       </label>
       <div class="modal-actions">
-        <button type="submit" class="btn primary" value="ok">만들기</button>
+        <button type="submit" class="btn primary" id="folderSubmit" value="ok">만들기</button>
         <button type="button" class="btn ghost" id="folderCancel">취소</button>
       </div>
     </form>
   </dialog>
 
   <div id="toast" class="toast" role="status"></div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script src="/js/app.js"></script>
 </body>
 </html>

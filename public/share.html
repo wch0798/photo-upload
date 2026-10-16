@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f1419" />
+  <title>공유 폴더</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="shareAuth" class="auth-gate hidden">
+    <form id="shareAuthForm" class="auth-card">
+      <h2>공유 폴더</h2>
+      <p class="sheet-note">이 링크는 비밀번호가 필요합니다.</p>
+      <label class="field">
+        <span>비밀번호</span>
+        <input type="password" id="shareAuthPassword" required />
+      </label>
+      <button type="submit" class="btn primary full">열기</button>
+      <p id="shareAuthError" class="auth-error hidden"></p>
+    </form>
+  </div>
+
+  <div class="app share-app" id="shareApp">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <h1 id="shareTitle">공유 폴더</h1>
+      </div>
+      <p class="share-badge">읽기 전용</p>
+    </header>
+
+    <main>
+      <div class="explorer-nav">
+        <button type="button" id="btnBack" class="nav-btn" disabled title="뒤로">←</button>
+        <div class="address-bar">
+          <nav id="breadcrumb" class="breadcrumb" aria-label="경로"></nav>
+        </div>
+      </div>
+
+      <div class="explorer-actions" style="margin-top:8px">
+        <button type="button" id="btnSelectAll" class="btn sm ghost">전체 선택</button>
+        <button type="button" id="btnDownload" class="btn sm primary" disabled>선택 다운로드</button>
+        <span id="selCount" class="sel-count"></span>
+      </div>
+
+      <div id="folderList" class="folder-list" style="margin-top:10px"></div>
+      <div id="photoGrid" class="photo-grid"></div>
+      <p id="empty" class="empty hidden">이 폴더에 사진이 없습니다.</p>
+    </main>
+  </div>
+
+  <dialog id="photoModal" class="modal viewer-modal">
+    <div class="viewer">
+      <div id="zoomStage" class="zoom-stage viewer-stage">
+        <img id="modalImg" alt="사진" draggable="false" />
+      </div>
+      <p class="zoom-hint">핀치 · 더블탭 · 휠로 확대</p>
+      <div class="viewer-info">
+        <h2 id="modalName"></h2>
+        <p id="modalTime"></p>
+        <p id="modalSize"></p>
+        <p id="modalLoc" class="hidden"></p>
+        <div id="mapFrame" class="map-frame hidden"></div>
+        <div class="modal-actions">
+          <a id="modalDownload" class="btn primary" download>다운로드</a>
+          <button type="button" id="modalLocBtn" class="btn ghost">위치</button>
+          <a id="modalMaps" class="btn ghost hidden" target="_blank" rel="noopener">지도에서 보기</a>
+          <button type="button" id="modalClose" class="btn ghost">닫기</button>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status"></div>
+  <script src="/js/share.js"></script>
+</body>
+</html>

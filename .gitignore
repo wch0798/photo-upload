@@ -1,6 +1,10 @@
 node_modules/
 uploads/
 data/metadata.json
+data/shares.json
+data/config.json
+data/devices.json
+uploads/.thumbs/
 certs/
 *.pem
 .DS_Store
